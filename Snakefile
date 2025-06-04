@@ -1,12 +1,12 @@
 container:
-  "docker://charlotteknight/eft2obs:LO"
+  "/afs/cern.ch/work/a/atarabin/EFT2Obs-Workflow/EFT2Obs-Workflow/eft2obs_LO.sif"
 
 wildcard_constraints:
   version = r"[0-9]+"
 
 configfile: "config.json"
 
-localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, setup_SM_gen, make_param_card, merge_yoda, get_scaling, add_versions,add_versions_common,add_versions_CMS
+localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, setup_SM_gen, make_param_card, run_gridpack_yoda, merge_yoda, get_scaling, add_versions,add_versions_common,add_versions_CMS
 
 # rule all:
 #   input:
@@ -26,9 +26,9 @@ localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, se
 #    expand("results/equations/{proc}.CMS.json", proc=["H_eemm_SMEFTsim_topU3l", "H_ttmm_SMEFTsim_topU3l", "H_llll_test_SMEFTsim_topU3l"])
 rule all:
  input:
-   expand("results/equations/{proc}.common.json", proc=["H_eemm_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.json", proc=["H_eemm_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.CMS.json", proc=["H_eemm_SMEFTsim_topU3l"])
+   expand("results/equations/{proc}.common.json", proc=["H_gg_SMEFTsim_topU3l"]),
+   expand("results/equations/{proc}.json", proc=["H_gg_SMEFTsim_topU3l"]),
+   expand("results/equations/{proc}.CMS.json", proc=["H_gg_SMEFTsim_topU3l"])
 # rule all:
 #   input:
 #     expand("results/equations/{proc}.common.json", proc=["WH_lep_SMEFTsim_topU3l", "ZH_lep_SMEFTsim_topU3l"])
@@ -49,16 +49,15 @@ rule copy_cards:
     expand("cards/{{proc}}/{card}_card.dat", card=["proc", "pythia8", "run"])
   output:
     expand("results/cards/{{proc}}.{{version}}/{card}_card.dat", card=["proc", "pythia8", "run"])
-  params:
-    sed_line = get_copy_cards_sed_line
+  # params:
+    # sed_line = get_copy_cards_sed_line
   shell:
     """
     ls results/cards
     cp cards/{wildcards.proc}/* results/cards/{wildcards.proc}.{wildcards.version}/
     sed -i 's/{wildcards.proc}/{wildcards.proc}.{wildcards.version}/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat
-    {params.sed_line}
     """
-
+## Ho commentato params.sed_line e ho gia' messo NP<=1, poi il NPprop<=2 sara' da fare a mano later
 rule copy_restrict_cards:
   output:
     "results/cards/restrict_cards/copied"
@@ -277,7 +276,7 @@ rule run_gridpack_yoda:
       ./bin/madevent shower GridRun < mgrunscript
     popd
 
-    cp EFT2Obs/RivetPlugins/HiggsTemplateCrossSectionsLess.cc /eft2obs/RivetPlugins/HiggsTemplateCrossSectionsLess.cc
+    cp EFT2Obs/RivetPlugins/{params.rivet}.cc /eft2obs/RivetPlugins/{params.rivet}.cc
     pushd /eft2obs ; ./setup/setup_rivet_plugins.sh ; popd
     rivet --analysis={params.rivet} $tmpdir/events.hepmc -o {output}
     rm -r $tmpdir

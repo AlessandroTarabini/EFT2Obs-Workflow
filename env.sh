@@ -1,5 +1,6 @@
-export MAMBA_ROOT_PREFIX=${PWD}/snakemake_env
-eval "$(./snakemake_env/micromamba shell hook -s posix)"
+#export MAMBA_ROOT_PREFIX=${PWD}/snakemake_env
+eval "$(/eos/home-a/atarabin/micromamba/envs/ shell hook -s posix)"
+micromamba activate
 micromamba activate snakemake
 
 export EFT2OBS_DIR=/eft2obs
