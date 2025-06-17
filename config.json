@@ -1,15 +1,15 @@
 {
     "H_aa_SMEFTsim_topU3l": {
-        "rivet": "inclusive",
-        "hist": "myh1",
+        "rivet": "CMS_2025_I2915441",
+        "hist": "pt_h",
         "prodmode": "",
         "extra_opts": "--rivet-ignore-beams",
         "make_gridpack_runtime": 10,
         "make_gridpack_threads": 1,
-        "nevents": 10,
-        "njobs": 1,
+        "nevents": 300,
+        "njobs": 4,
         "prop_corr": false,
-        "lhe": true
+        "lhe": false
     },
     "H_bb_SMEFTsim_topU3l": {
         "rivet": "inclusive",
@@ -35,29 +35,17 @@
         "prop_corr": false,
         "lhe": true
     },
-    "H_gg_SMEFTsim_topU3l_ORIG": {
+    "H_gg_SMEFTsim_topU3l": {
         "rivet": "inclusive",
         "hist": "myh1",
         "prodmode": "",
         "extra_opts": "--rivet-ignore-beams",
         "make_gridpack_runtime": 10,
         "make_gridpack_threads": 1,
-        "nevents": 10,
+        "nevents": 1000,
         "njobs": 1,
         "prop_corr": false,
         "lhe": true
-    },
-    "H_gg_SMEFTsim_topU3l": {
-        "rivet": "CMS_2025_I2915441",
-        "hist": "pt_h",
-        "prodmode": "",
-        "extra_opts": "--rivet-ignore-beams",
-        "make_gridpack_runtime": 10,
-        "make_gridpack_threads": 1,
-        "nevents": 200,
-        "njobs": 1,
-        "prop_corr": false,
-        "lhe": false
     },
     "H_tautau_SMEFTsim_topU3l": {
         "rivet": "inclusive",

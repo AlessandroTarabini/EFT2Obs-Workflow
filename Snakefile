@@ -26,9 +26,9 @@ localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, se
 #    expand("results/equations/{proc}.CMS.json", proc=["H_eemm_SMEFTsim_topU3l", "H_ttmm_SMEFTsim_topU3l", "H_llll_test_SMEFTsim_topU3l"])
 rule all:
  input:
-   expand("results/equations/{proc}.common.json", proc=["H_gg_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.json", proc=["H_gg_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.CMS.json", proc=["H_gg_SMEFTsim_topU3l"])
+   expand("results/equations/{proc}.common.json", proc=["H_aa_SMEFTsim_topU3l"]),
+   expand("results/equations/{proc}.json", proc=["H_aa_SMEFTsim_topU3l"]),
+   expand("results/equations/{proc}.CMS.json", proc=["H_aa_SMEFTsim_topU3l"])
 # rule all:
 #   input:
 #     expand("results/equations/{proc}.common.json", proc=["WH_lep_SMEFTsim_topU3l", "ZH_lep_SMEFTsim_topU3l"])
@@ -38,26 +38,27 @@ rule all:
 
 def get_copy_cards_sed_line(wildcards):
   if wildcards.version == "1":
-    return f"sed -i 's/NP=0/NP<=1/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat"
+    return f"sed -i 's/NP_TBC=0/NP<=1/g; s/NPprop_TBC=0/NPprop=0/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat"
   if wildcards.version == "2":
-    return f"sed -i 's/NPprop=0/NPprop<=2/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat"
+    return f"sed -i 's/NPprop_TBC=0/NPprop<=2/g; s/NP_TBC=0/NP=0/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat"
   else:
-    return ""
+    return f"sed -i 's/NPprop_TBC=0/NPprop=0/g; s/NP_TBC=0/NP=0/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat"
 
 rule copy_cards:
   input:
     expand("cards/{{proc}}/{card}_card.dat", card=["proc", "pythia8", "run"])
   output:
     expand("results/cards/{{proc}}.{{version}}/{card}_card.dat", card=["proc", "pythia8", "run"])
-  # params:
-    # sed_line = get_copy_cards_sed_line
+  params:
+    sed_line = get_copy_cards_sed_line
   shell:
     """
     ls results/cards
     cp cards/{wildcards.proc}/* results/cards/{wildcards.proc}.{wildcards.version}/
     sed -i 's/{wildcards.proc}/{wildcards.proc}.{wildcards.version}/g' results/cards/{wildcards.proc}.{wildcards.version}/proc_card.dat
+    {params.sed_line}
     """
-## Ho commentato params.sed_line e ho gia' messo NP<=1, poi il NPprop<=2 sara' da fare a mano later
+
 rule copy_restrict_cards:
   output:
     "results/cards/restrict_cards/copied"
