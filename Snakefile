@@ -2,11 +2,22 @@ container:
   "/afs/cern.ch/work/a/atarabin/EFT2Obs-Workflow/EFT2Obs-Workflow/eft2obs_LO.sif"
 
 wildcard_constraints:
-  version = r"[0-9]+"
+  version = r"[0-9]+",
+  proc = r"[^.]+",
+  hist = r"[^.]+"
 
 configfile: "config.json"
 
-localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, setup_SM_gen, make_param_card, run_gridpack_yoda, merge_yoda, get_scaling, add_versions,add_versions_common,add_versions_CMS
+def get_hists(proc):
+  h = config[proc]["hist"]
+  if isinstance(h, list):
+    return h
+  return [h]
+
+def all_equation_targets(procs, suffix):
+  return [f"results/equations/{proc}.{hist}.{suffix}" for proc in procs for hist in get_hists(proc)]
+
+#localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, setup_SM_gen, make_param_card, run_gridpack_yoda, merge_yoda, get_scaling, add_versions,add_versions_common,add_versions_CMS
 
 # rule all:
 #   input:
@@ -24,11 +35,19 @@ localrules: all, copy_cards, copy_restrict_cards, setup_process, auto_detect, se
 #    expand("results/equations/{proc}.common.json", proc=["H_eemm_SMEFTsim_topU3l", "H_ttmm_SMEFTsim_topU3l", "H_llll_test_SMEFTsim_topU3l"]),
 #    expand("results/equations/{proc}.json", proc=["H_eemm_SMEFTsim_topU3l", "H_ttmm_SMEFTsim_topU3l", "H_llll_test_SMEFTsim_topU3l"]),
 #    expand("results/equations/{proc}.CMS.json", proc=["H_eemm_SMEFTsim_topU3l", "H_ttmm_SMEFTsim_topU3l", "H_llll_test_SMEFTsim_topU3l"])
+
+# ACTIVE_PROCS = ["H_aa_SMEFTsim_topU3l_CPV"]
+# ACTIVE_PROCS = ["qqH_SMEFTsim_topU3l_CPV", "WH_lep_SMEFTsim_topU3l_CPV", "ZH_lep_SMEFTsim_topU3l_CPV"]
+ACTIVE_PROCS = ["ttH_SMEFTsim_topU3l_CPV"]
 rule all:
  input:
-   expand("results/equations/{proc}.common.json", proc=["H_aa_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.json", proc=["H_aa_SMEFTsim_topU3l"]),
-   expand("results/equations/{proc}.CMS.json", proc=["H_aa_SMEFTsim_topU3l"])
+  #  expand("results/equations/{proc}.common.json", proc=["H_aa_SMEFTsim_topU3l"]),
+  #  expand("results/equations/{proc}.json", proc=["H_aa_SMEFTsim_topU3l"]),
+  #  expand("results/equations/{proc}.CMS.json", proc=["H_aa_SMEFTsim_topU3l"])
+   all_equation_targets(ACTIVE_PROCS, "common.json"),
+   all_equation_targets(ACTIVE_PROCS, "json"),
+   all_equation_targets(ACTIVE_PROCS, "CMS.json"),
+
 # rule all:
 #   input:
 #     expand("results/equations/{proc}.common.json", proc=["WH_lep_SMEFTsim_topU3l", "ZH_lep_SMEFTsim_topU3l"])
@@ -79,6 +98,9 @@ rule setup_process:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     ./EFT2Obs/scripts/setup_model_for_proc.sh {wildcards.proc}.{wildcards.version}
     
     rm -rf ${{PROC_DIR}}/{wildcards.proc}.{wildcards.version}
@@ -96,9 +118,12 @@ rule auto_detect:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     pushd ${{PROC_DIR}} ; rm -rf {wildcards.proc}.{wildcards.version} ; tar -xf {wildcards.proc}.{wildcards.version}.tar.gz ; popd
     ./EFT2Obs/scripts/setup_model_for_proc.sh {wildcards.proc}.{wildcards.version}
-    ./EFT2Obs/scripts/auto_detect_operators.py -p {wildcards.proc}.{wildcards.version} --noValidation --def-val 1.0
+    ./EFT2Obs/scripts/auto_detect_operators.py -p {wildcards.proc}.{wildcards.version} --noValidation --def-val 1.0 -b SMEFT,SMEFTcpv
     rm -r ${{PROC_DIR}}/{wildcards.proc}.{wildcards.version}
     """
 
@@ -133,6 +158,9 @@ rule make_param_card:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     pushd ${{PROC_DIR}} ; rm -rf {wildcards.proc}.{wildcards.version} ; tar -xf {wildcards.proc}.{wildcards.version}.tar.gz ; popd
     ./EFT2Obs/scripts/make_param_card.py -p {wildcards.proc}.{wildcards.version} -c results/cards/{wildcards.proc}.{wildcards.version}/config.json -o results/cards/{wildcards.proc}.{wildcards.version}/param_card.dat
     rm -r ${{PROC_DIR}}/{wildcards.proc}.{wildcards.version}
@@ -151,6 +179,9 @@ rule make_gridpack:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     pushd ${{PROC_DIR}} ; rm -rf {wildcards.proc}.{wildcards.version}.SM_gen ; tar -xf {wildcards.proc}.{wildcards.version}.SM_gen.tar.gz ; popd
     ./EFT2Obs/scripts/setup_model_for_proc.sh {wildcards.proc}.{wildcards.version}.SM_gen
     ./EFT2Obs/scripts/make_gridpack.sh {wildcards.proc}.{wildcards.version}.SM_gen 0 {threads}
@@ -175,7 +206,7 @@ def getruntime(wildcards):
 
   cum_time = (p1n * n_rw + p2n * n_rw**2) / 60 # in miuntes
   
-  runtime = 10 + cum_time * 1.5
+  runtime = 20 + cum_time * 2.0
   return runtime
 
 rule run_rwpoint_direct:
@@ -189,6 +220,9 @@ rule run_rwpoint_direct:
   shell:
     """
       set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+      export EFT2OBS_DIR=/eft2obs
+      export PROC_DIR=$(pwd)/results/process_output
+      export CARDS_DIR=$(pwd)/results/cards
 
       if [[ -z ${{_CONDOR_SCRATCH_DIR}} ]] ; then
         tmpdir=$(mktemp -d -p $(pwd)/results/process_output )
@@ -256,6 +290,9 @@ rule run_gridpack_yoda:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     export HIGGSPRODMODE={params.prodmode}
 
     if [[ -z ${{_CONDOR_SCRATCH_DIR}} ]] ; then
@@ -278,6 +315,7 @@ rule run_gridpack_yoda:
     popd
 
     cp EFT2Obs/RivetPlugins/{params.rivet}.cc /eft2obs/RivetPlugins/{params.rivet}.cc
+    if [ -f EFT2Obs/RivetPlugins/{params.rivet}.h ]; then cp EFT2Obs/RivetPlugins/{params.rivet}.h /eft2obs/RivetPlugins/{params.rivet}.h ; fi
     pushd /eft2obs ; ./setup/setup_rivet_plugins.sh ; popd
     rivet --analysis={params.rivet} $tmpdir/events.hepmc -o {output}
     rm -r $tmpdir
@@ -296,6 +334,9 @@ rule run_gridpack_lhe:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
 
     if [[ -z ${{_CONDOR_SCRATCH_DIR}} ]] ; then
       tmpdir=$(mktemp -d -p $(pwd)/results/process_output )
@@ -323,6 +364,9 @@ rule merge_yoda:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     yodamerge -o {output} {input}
     """
 
@@ -334,6 +378,9 @@ rule merge_lhe:
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     ./EFT2Obs/scripts/lhe_merge.py {output} {input}
     """
 
@@ -343,58 +390,70 @@ rule get_scaling:
     then = "results/lhe/{proc}/{version}/events.lhe",
     otherwise = "results/yoda/{proc}/{version}/Rivet.yoda")
   output:
-    "results/equations/{proc}.{version}.json",
-    "results/equations/{proc}.{version}.common.json"
+    "results/equations/{proc}.{version}.{hist}.json",
+    "results/equations/{proc}.{version}.{hist}.common.json"
   params:
     runset = lambda wildcards: config[wildcards.proc],
     extra_args = lambda wildcards: "--skip-square-terms --skip-cross-terms" if wildcards.version == 2 else ""
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
-    ./EFT2Obs/scripts/get_scaling.py -c results/cards/{wildcards.proc}.{wildcards.version}/config.json -i {input} --hist "/{params.runset[rivet]}/{params.runset[hist]}" --save common_json,json -o results/equations/{wildcards.proc}.{wildcards.version} --bin-labels EFT2Obs/resources/STXS_bin_labels.json --remove-empty-bins --skip-print {params.extra_args}
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
+    ./EFT2Obs/scripts/get_scaling.py -c results/cards/{wildcards.proc}.{wildcards.version}/config.json -i {input} --hist "/{params.runset[rivet]}/{wildcards.hist}" --save common_json,json -o results/equations/{wildcards.proc}.{wildcards.version}.{wildcards.hist} --bin-labels EFT2Obs/resources/STXS_bin_labels.json --remove-empty-bins --skip-print {params.extra_args}
     """
 
 rule add_versions:
   input:
     branch(lookup(dpath="{proc}/prop_corr", within=config), 
-    then = expand("results/equations/{{proc}}.{version}.json", version=[1, 2]),
-    otherwise = expand("results/equations/{{proc}}.{version}.json", version=[1]))
+    then = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1, 2]),
+    otherwise = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1]))
   output:
-    "results/equations/{proc}.json"
+    "results/equations/{proc}.{hist}.json"
   resources:
     runtime=30
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     ./EFT2Obs/scripts/add_scaling.py -i {input} -o {output}
     """
   
 rule add_versions_common:
   input:
     branch(lookup(dpath="{proc}/prop_corr", within=config), 
-    then = expand("results/equations/{{proc}}.{version}.json", version=[1, 2]),
-    otherwise = expand("results/equations/{{proc}}.{version}.json", version=[1]))
+    then = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1, 2]),
+    otherwise = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1]))
   output:
-    "results/equations/{proc}.common.json"
+    "results/equations/{proc}.{hist}.common.json"
   resources:
     runtime=30
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     ./EFT2Obs/scripts/add_scaling.py -i {input} -o {output} --common
     """
 
 rule add_versions_CMS:
   input:
     branch(lookup(dpath="{proc}/prop_corr", within=config), 
-    then = expand("results/equations/{{proc}}.{version}.json", version=[1, 2]),
-    otherwise = expand("results/equations/{{proc}}.{version}.json", version=[1]))
+    then = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1, 2]),
+    otherwise = expand("results/equations/{{proc}}.{version}.{{hist}}.json", version=[1]))
   output:
-    "results/equations/{proc}.CMS.json"
+    "results/equations/{proc}.{hist}.CMS.json"
   resources:
     runtime=30
   shell:
     """
     set +u ; pushd /eft2obs ; source /eft2obs/env.sh ; popd
+    export EFT2OBS_DIR=/eft2obs
+    export PROC_DIR=$(pwd)/results/process_output
+    export CARDS_DIR=$(pwd)/results/cards
     ./EFT2Obs/scripts/add_scaling.py -i {input} -o {output} --CMS
     """
