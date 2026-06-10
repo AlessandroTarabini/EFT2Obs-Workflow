@@ -19,7 +19,7 @@
         "make_gridpack_runtime": 10,
         "make_gridpack_threads": 1,
         "nevents": 300,
-        "njobs": 4,
+        "njobs": 500,
         "prop_corr": false,
         "lhe": false
     },
@@ -283,7 +283,7 @@
         "make_gridpack_runtime": 20,
         "make_gridpack_threads": 4,
         "nevents": 2000,
-        "njobs": 10,
+        "njobs": 100,
         "prop_corr": true,
         "lhe": false
     },
@@ -295,7 +295,7 @@
         "make_gridpack_runtime": 20,
         "make_gridpack_threads": 4,
         "nevents": 2000,
-        "njobs": 10,
+        "njobs": 100,
         "prop_corr": true,
         "lhe": false
     },
@@ -307,7 +307,7 @@
         "make_gridpack_runtime": 20,
         "make_gridpack_threads": 4,
         "nevents": 2000,
-        "njobs": 10,
+        "njobs": 100,
         "prop_corr": true,
         "lhe": false
     },
@@ -319,13 +319,25 @@
         "make_gridpack_runtime": 20,
         "make_gridpack_threads": 4,
         "nevents": 2000,
-        "njobs": 10,
+        "njobs": 100,
         "prop_corr": true,
         "lhe": false
     },
     "ggH_SMEFTsim_topU3l_CPV": {
         "rivet": "CMS_2025_I2915441",
         "hist": ["PTH", "rapidity", "NJ", "PTJ0", "DPhiJ0J1"],
+        "prodmode": "GGF",
+        "extra_opts": "",
+        "make_gridpack_runtime": 20,
+        "make_gridpack_threads": 4,
+        "nevents": 2000,
+        "njobs": 500,
+        "prop_corr": false,
+        "lhe": false
+    },
+    "ggH_SMEFTsim_topU3l_CPV_test": {
+        "rivet": "Higgs2GGFiducialAndDifferential",
+        "hist": ["pt_h", "h_deltaphijj"],
         "prodmode": "GGF",
         "extra_opts": "",
         "make_gridpack_runtime": 20,
